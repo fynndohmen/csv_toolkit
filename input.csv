@@ -1,0 +1,7 @@
+name,age,country,salary
+Alice,29,Germany,55000
+Bob,,Germany,not_a_number
+Charly,41,France,72000
+,35,Germany,43000
+Dina,19,Spain,18000
+Eva,27,Germany,61000
