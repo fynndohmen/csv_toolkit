@@ -56,15 +56,11 @@ def parse_float(value: str) -> Optional[float]:
 
 
 def clean_row(row: Dict[str, str], only_country: Optional[str] = None) -> Optional[Dict[str, str]]:
-    """
-    Gibt bereinigte Row zurück oder None, wenn sie verworfen wird.
-    """
     name = (row.get("name") or "").strip()
     country = (row.get("country") or "").strip()
     age = parse_int(row.get("age", ""))
     salary = parse_float(row.get("salary", ""))
 
-    # Filter-Regeln
     if not name:
         return None
     if age is None:
@@ -74,14 +70,11 @@ def clean_row(row: Dict[str, str], only_country: Optional[str] = None) -> Option
     if only_country and country != only_country:
         return None
 
-    # Hier ein kleines list comprehension Beispiel:
-    # wir normalisieren whitespace in allen string-feldern
     cleaned = {
         k: v.strip() if isinstance(v, str) else v
         for k, v in row.items()
     }
 
-    # wir überschreiben mit unseren parsed Werten
     cleaned["name"] = name
     cleaned["country"] = country
     cleaned["age"] = str(age)
@@ -91,9 +84,6 @@ def clean_row(row: Dict[str, str], only_country: Optional[str] = None) -> Option
 
 
 def batcher(items: Iterable[T], batch_size: int) -> Iterator[List[T]]:
-    """
-    Generator: sammelt Elemente in Listen-Batches.
-    """
     batch: List[T] = []
     for item in items:
         batch.append(item)
