@@ -1,0 +1,5 @@
+name,country,age,salary,notes
+Gina,Germany,25,48000, ok
+  Henry  ,USA,38,91000, name has spaces
+Iris,Germany, ,51000, age blank -> drop
+Jon,Germany,31,abc, salary invalid -> drop

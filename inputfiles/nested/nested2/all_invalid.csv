@@ -1,0 +1,6 @@
+name,country,age,salary,notes
+,DE,10,1000,missing name
+NoAge,DE,,1000,missing age
+NoSalary,DE,10,,missing salary
+BadAge,DE,xx,1000,bad age
+BadSalary,DE,10,xx,bad salary

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import csv
 import time
 from functools import wraps
@@ -98,17 +97,13 @@ def batcher(items: Iterable[T], batch_size: int) -> Iterator[List[T]]:
 def process_csv(input_path: str, output_path: str, batch_size: int, only_country: Optional[str]) -> None:
     rows = read_rows(input_path)
 
-    # LIST COMPREHENSION + Generator style:
-    # Wir erzeugen einen "cleaned_rows" generator, der nur gültige rows durchlässt.
     cleaned_rows = (
         clean_row(r, only_country=only_country)
         for r in rows
     )
 
-    # Jetzt filtern wir None weg (das ist auch generator-friendly):
     cleaned_rows = (r for r in cleaned_rows if r is not None)
 
-    # Wir schreiben streaming in batches:
     wrote_header = False
     total_written = 0
     total_seen = 0
@@ -117,10 +112,8 @@ def process_csv(input_path: str, output_path: str, batch_size: int, only_country
         writer: Optional[csv.DictWriter] = None
 
         for batch in batcher(cleaned_rows, batch_size=batch_size):
-            # batch enthält Dict[str,str] rows
             total_seen += len(batch)
 
-            # Header/Writer initialisieren, wenn wir erste gültige Zeile haben
             if not wrote_header:
                 fieldnames = list(batch[0].keys())
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -132,23 +125,3 @@ def process_csv(input_path: str, output_path: str, batch_size: int, only_country
             total_written += len(batch)
 
     print(f"[DONE] wrote={total_written} rows -> {output_path}")
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Streaming CSV Cleaner")
-    parser.add_argument("--input", required=True, help="Input CSV path")
-    parser.add_argument("--output", required=True, help="Output CSV path")
-    parser.add_argument("--batch-size", type=int, default=2, help="Batch size for writing")
-    parser.add_argument("--only-country", default=None, help="Keep only rows matching country (e.g. Germany)")
-    args = parser.parse_args()
-
-    process_csv(
-        input_path=args.input,
-        output_path=args.output,
-        batch_size=args.batch_size,
-        only_country=args.only_country
-    )
-
-
-if __name__ == "__main__":
-    main()

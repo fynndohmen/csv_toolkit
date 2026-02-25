@@ -1,0 +1,4 @@
+name,country,age,salary,notes
+Alice,Germany,29,55000.0,first row
+Eve,Germany,34,72000.5,float salary ok
+Frank,Germany,0,0.0,edge case: 0 is valid

@@ -1,0 +1,8 @@
+name,country,age,salary,notes
+ Alice , Germany , 29 , 55000 ,  first row  
+,Berlin,30,60000,missing name -> drop
+Bob,France,,42000,missing age -> drop
+Carla,Germany,notanumber,70000,bad age -> drop
+Dan,USA,41,   ,blank salary -> drop
+Eve,Germany,34,72000.50, float salary ok
+ Frank ,Germany,0,0, edge case: 0 is valid
