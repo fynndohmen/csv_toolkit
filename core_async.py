@@ -1,3 +1,6 @@
+
+
+
 from __future__ import annotations
 
 import asyncio
@@ -109,7 +112,7 @@ def process_csv_async(
     chunk_size: int = 500,
 ) -> None:
     """
-    Sync wrapper so CLI/executors can call it like your other functions.
+    Sync wrapper so CLI/executors can call it like the other functions.
     """
     asyncio.run(
         _process_csv_async_inner(
@@ -121,3 +124,5 @@ def process_csv_async(
             chunk_size=chunk_size,
         )
     )
+
+

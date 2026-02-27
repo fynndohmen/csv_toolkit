@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from typing import Optional
 
 from core_pipeline import process_csv, process_csv_pipeline
+from core_async import process_csv_async
 
 @dataclass(frozen=True)
 class Job:
@@ -16,9 +17,11 @@ class Job:
     out_file: Path
     batch_size: int
     only_country: Optional[str]
-    mode: str  # "simple" | "pipeline"
+    mode: str  # "simple" | "pipeline" | "async"
     pipeline_workers: int
     queue_size: int
+    async_concurrency: int
+    async_chunk_size: int
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,15 @@ def run_job(job: Job) -> JobResult:
                 only_country=job.only_country,
                 worker_count=job.pipeline_workers,
                 queue_size=job.queue_size,
+            )
+        elif job.mode == "async":
+            process_csv_async(
+                input_path=str(job.in_file),
+                output_path=str(job.out_file),
+                batch_size=job.batch_size,
+                only_country=job.only_country,
+                concurrency=job.async_concurrency,
+                chunk_size=job.async_chunk_size,
             )
         else:
             process_csv(
@@ -74,14 +86,18 @@ def main() -> None:
     # Which processing mode to use per file
     parser.add_argument(
         "--mode",
-        choices=["simple", "pipeline"],
+        choices=["simple", "pipeline", "async"],
         default="simple",
-        help="Row processing mode per file: simple (generator stream) or pipeline (Reader/Worker/Writer queues)",
+        help="Row processing mode per file: simple (generator stream), pipeline (Reader/Worker/Writer queues) or async (using waiting time caused by latency of network/OS for API/DB calls)",
     )
 
     # Pipeline-specific knobs (only used if --mode pipeline)
     parser.add_argument("--pipeline-workers", type=int, default=4, help="Worker threads inside the pipeline per file")
     parser.add_argument("--queue-size", type=int, default=1000, help="Queue maxsize inside the pipeline per file")
+
+    # async-specific knobs (only used if --mode async)
+    parser.add_argument("--async-concurrency", type=int, default=20, help="Max number of in-flight API/DB calls per file (async mode)")
+    parser.add_argument("--async-chunk-size", type=int, default=500, help="How many rows to buffer before processing them asynchronously (async mode)")
 
     args = parser.parse_args()
 
@@ -116,6 +132,24 @@ def main() -> None:
             "This can be heavy. Consider --executor thread for pipeline mode."
         )
 
+    # Avoid stacking too much concurrency in async mode:
+    # total in-flight calls ≈ file_workers * async_concurrency
+    if args.mode == "async" and file_workers > 2:
+        print(
+            f"[WARN] --mode async runs up to {int(args.async_concurrency)} in-flight calls per file. "
+            f"With {file_workers} file workers that can be ~{file_workers * int(args.async_concurrency)} concurrent calls. "
+            f"Capping file-level --workers from {file_workers} to 2 to avoid overload."
+        )
+        file_workers = 2
+
+    # Optional: discourage process executor + async mode (processes * async concurrency)
+    if args.mode == "async" and args.executor == "process":
+        print(
+            f"[WARN] Using ProcessPoolExecutor with --mode async means: processes per file job + async concurrency per process. "
+            f"Total in-flight calls can become ~{file_workers * int(args.async_concurrency)}. "
+            "This can be heavy. Consider --executor thread for async mode."
+        )
+
     jobs: list[Job] = []
     for input_file in csv_files:
         rel_path = input_file.relative_to(input_dir)
@@ -134,6 +168,8 @@ def main() -> None:
                 mode=args.mode,
                 pipeline_workers=max(1, int(args.pipeline_workers)),
                 queue_size=max(1, int(args.queue_size)),
+                async_concurrency=max(1, int(args.async_concurrency)),
+                async_chunk_size=max(1, int(args.async_chunk_size))
             )
         )
 
