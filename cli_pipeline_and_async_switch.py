@@ -134,7 +134,7 @@ def main() -> None:
 
     # Avoid stacking too much concurrency in async mode:
     # total in-flight calls ≈ file_workers * async_concurrency
-    if args.mode == "async" and file_workers > 2:
+    if args.mode == "async" and file_workers >= 2:
         print(
             f"[WARN] --mode async runs up to {int(args.async_concurrency)} in-flight calls per file. "
             f"With {file_workers} file workers that can be ~{file_workers * int(args.async_concurrency)} concurrent calls. "
